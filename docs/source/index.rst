@@ -83,20 +83,20 @@ Rendered Egocentric Views
    :align: center
    :width: 100%
 
-Real-World Deployment
-~~~~~~~~~~~~~~~~~~~~~
+Sim-to-Real Deployment
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
    :widths: 50 50
    :header-rows: 1
 
-   * - Real-world Pick-up
-     - Real-world Stair-Climbing
+   * - Pick-up
+     - Stair-Climbing
    * - .. image:: ../../assets/videos/deployment_pickup.gif
-          :alt: Real-world pick-up deployment
+          :alt: Pick-up deployment
           :width: 100%
      - .. image:: ../../assets/videos/deployment_stairs.gif
-          :alt: Real-world stair-climbing deployment
+          :alt: Stair-climbing deployment
           :width: 100%
 
 Bundled Dependencies

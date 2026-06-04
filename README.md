@@ -47,7 +47,7 @@
 
 <img src="assets/videos/deployment_egocentric_views.gif" width="100%"/>
 
-| Real-world Pick-up | Real-world Stair-Climbing |
+| Pick-up | Stair-Climbing |
 |:---:|:---:|
 | <img src="assets/videos/deployment_pickup.gif" width="420"/> | <img src="assets/videos/deployment_stairs.gif" width="420"/> |
 
@@ -110,7 +110,7 @@ Full documentation can be found at [docs](https://nvlabs.github.io/GRAIL/)
 
 ## TODOs
 
-- [ ] Release quick-start demo script for 4D HOI reconstruction
+- [ ] Provide quick-start demo script
 - [ ] Release GRAIL manipulation dataset
 - [ ] Release task-general tracking policy checkpoints
 

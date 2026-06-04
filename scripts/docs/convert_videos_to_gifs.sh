@@ -34,17 +34,29 @@ declare -A VIDEOS=(
     ["realworld"]="static/videos/real_deployment.mp4"
 )
 
-# Conversion knobs. Aggressive: 10 fps + 540px wide + 5s max duration +
-# 64-color palette + lossy gifsicle keeps each GIF ≤ ~3 MB.
+# Conversion knobs. Aggressive: 10 fps + 540px wide + 64-color palette +
+# lossy gifsicle keeps most GIFs small. Deployment result GIFs use the full
+# source sequence; other motion-gallery GIFs are capped to 5s.
 FPS=10
 WIDTH=540
 MAX_DURATION=5
+
+# Empty duration means use the full source clip.
+declare -A MAX_DURATIONS=(
+    ["deployment_pickup"]=""
+    ["deployment_stairs"]=""
+)
 
 for name in "${!VIDEOS[@]}"; do
     rel="${VIDEOS[$name]}"
     mp4="${TMPDIR}/${name}.mp4"
     gif="${OUT_DIR}/${name}.gif"
     width="${WIDTH}"
+    max_duration="${MAX_DURATIONS[$name]-$MAX_DURATION}"
+    duration_args=()
+    if [ -n "${max_duration}" ]; then
+        duration_args=(-t "${max_duration}")
+    fi
     if [ "${name}" = "deployment_egocentric_views" ]; then
         width=720
     fi
@@ -55,21 +67,25 @@ for name in "${!VIDEOS[@]}"; do
     fi
 
     echo "  convert ${name} → ${gif}"
-    # Two-pass palette generation; trim to MAX_DURATION; small palette.
+    # Two-pass palette generation; optional trim; small palette.
     palette="${TMPDIR}/${name}_palette.png"
     ffmpeg -y -loglevel error \
-        -t "${MAX_DURATION}" -i "${mp4}" \
+        "${duration_args[@]}" -i "${mp4}" \
         -vf "fps=${FPS},scale=${width}:-1:flags=lanczos,palettegen=stats_mode=diff:max_colors=64" \
         "${palette}"
     ffmpeg -y -loglevel error \
-        -t "${MAX_DURATION}" -i "${mp4}" -i "${palette}" \
+        "${duration_args[@]}" -i "${mp4}" -i "${palette}" \
         -lavfi "fps=${FPS},scale=${width}:-1:flags=lanczos [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=5" \
         -loop 0 \
         "${gif}"
     rm -f "${palette}"
 
-    # Lossy optimize for further size reduction.
-    gifsicle -O3 --lossy=80 --colors 64 "${gif}" -o "${gif}"
+    # Lossy optimize for further size reduction when gifsicle is available.
+    if command -v gifsicle >/dev/null 2>&1; then
+        gifsicle -O3 --lossy=80 --colors 64 "${gif}" -o "${gif}"
+    else
+        echo "    skip gifsicle optimization; gifsicle not found"
+    fi
     sz=$(stat -c %s "${gif}")
     printf "    %s : %s bytes\n" "${name}.gif" "${sz}"
 done
