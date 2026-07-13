@@ -140,9 +140,12 @@ if [ "$SKIP_GEM_SMPL" = false ]; then
     section "GEM-SMPL checkpoints"
 
     GEM_SMPL_MARKER="imports/GEM-SMPL/inputs/checkpoints/hmr2/epoch=10-step=25000.ckpt"
+    GEM_SMPL_BODY_MARKER="imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl"
+    GEM_SMPL_VIMO_MEAN="imports/GEM-SMPL/inputs/checkpoints/vimo/smpl_mean_params.npz"
     HMR4D_MARKER="imports/GEM-SMPL/outputs/mocap_mixed_v1/genmo/genmo_lg_jukebox_jukebox_new/version_0/checkpoints/last.ckpt"
 
-    if [ -f "$GEM_SMPL_MARKER" ] && [ -f "$HMR4D_MARKER" ] && [ "$FORCE" = false ]; then
+    if [ -f "$GEM_SMPL_MARKER" ] && [ -f "$GEM_SMPL_BODY_MARKER" ] && \
+       [ -f "$GEM_SMPL_VIMO_MEAN" ] && [ -f "$HMR4D_MARKER" ] && [ "$FORCE" = false ]; then
         ok "GEM-SMPL checkpoints (already exist)"
     else
         python3 -c "from huggingface_hub import hf_hub_download" 2>/dev/null || {
@@ -150,10 +153,20 @@ if [ "$SKIP_GEM_SMPL" = false ]; then
             exit 1
         }
 
-        # Inputs bundle: pre-trained externals (HMR2, ViTPose, VIMO, YOLO, SMPL-X body model)
+        # Inputs bundle: pre-trained externals (HMR2, ViTPose, VIMO, YOLO, SMPL/SMPL-X body models)
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_extra.npy"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_h36m.npy"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_wham.npy"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_FEMALE.pkl"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_MALE.pkl"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/smpl_mean_params.npz"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl_neutral_J_regressor.pt"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smplx2smpl_sparse.pt"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smplx/SMPLX_NEUTRAL.npz"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/hmr2/epoch=10-step=25000.ckpt"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/vitpose/vitpose-h-multi-coco.pth"
+        hf_grail_download "GEM-SMPL/inputs/checkpoints/vimo/smpl_mean_params.npz"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/vimo/vimo_checkpoint.pth.tar"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/yolo/yolov8x.pt"
         # Outputs: GRAIL's own GENMO (HMR4D) checkpoint
@@ -217,9 +230,12 @@ if [ "$SKIP_FOUNDATIONPOSE" = false ]; then
     section "FoundationPose weights"
 
     FP_SCORER="imports/FoundationPose/weights/2024-01-11-20-02-45/model_best.pth"
+    FP_SCORER_CFG="imports/FoundationPose/weights/2024-01-11-20-02-45/config.yml"
     FP_REFINER="imports/FoundationPose/weights/2023-10-28-18-33-37/model_best.pth"
+    FP_REFINER_CFG="imports/FoundationPose/weights/2023-10-28-18-33-37/config.yml"
 
-    if [ -f "$FP_SCORER" ] && [ -f "$FP_REFINER" ] && [ "$FORCE" = false ]; then
+    if [ -f "$FP_SCORER" ] && [ -f "$FP_SCORER_CFG" ] && \
+       [ -f "$FP_REFINER" ] && [ -f "$FP_REFINER_CFG" ] && [ "$FORCE" = false ]; then
         ok "FoundationPose weights (already exist)"
     else
         python3 -c "from huggingface_hub import hf_hub_download" 2>/dev/null || {
@@ -229,7 +245,9 @@ if [ "$SKIP_FOUNDATIONPOSE" = false ]; then
 
         # Two-network pipeline: scorer ranks pose hypotheses, refiner regresses pose deltas.
         # Timestamp dir names are load-path sensitive — FoundationPose's loader hardcodes them.
+        hf_grail_download "FoundationPose/weights/2024-01-11-20-02-45/config.yml"
         hf_grail_download "FoundationPose/weights/2024-01-11-20-02-45/model_best.pth"
+        hf_grail_download "FoundationPose/weights/2023-10-28-18-33-37/config.yml"
         hf_grail_download "FoundationPose/weights/2023-10-28-18-33-37/model_best.pth"
     fi
 else
@@ -319,9 +337,14 @@ check_file() {
 }
 
 # GEM-SMPL
+check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl"     "SMPL neutral body model"
+check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_extra.npy" "SMPL extra joint regressor"
+check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smpl_neutral_J_regressor.pt" "SMPL neutral joint regressor"
+check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smplx2smpl_sparse.pt"     "SMPL-X to SMPL sparse mapper"
 check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smplx/SMPLX_NEUTRAL.npz" "SMPL-X body model"
 check_file "imports/GEM-SMPL/inputs/checkpoints/hmr2/epoch=10-step=25000.ckpt"        "HMR2 checkpoint"
 check_file "imports/GEM-SMPL/inputs/checkpoints/vitpose/vitpose-h-multi-coco.pth"      "ViTPose (GEM-SMPL)"
+check_file "imports/GEM-SMPL/inputs/checkpoints/vimo/smpl_mean_params.npz"             "VIMO SMPL mean params"
 check_file "imports/GEM-SMPL/inputs/checkpoints/vimo/vimo_checkpoint.pth.tar"          "VIMO checkpoint"
 check_file "imports/GEM-SMPL/inputs/checkpoints/yolo/yolov8x.pt"                       "YOLOv8x detector"
 check_file "imports/GEM-SMPL/outputs/mocap_mixed_v1/genmo/genmo_lg_jukebox_jukebox_new/version_0/checkpoints/last.ckpt" "HMR4D (GENMO) checkpoint"
@@ -337,7 +360,9 @@ check_file "imports/GEM-SOMA/inputs/mhr_data/MHR/mhr_model_lod6.pt"             
 check_file "imports/GEM-SOMA/inputs/mhr_data/MHR/base_body_lod6.obj"                   "SOMA base body"
 
 # FoundationPose
+check_file "imports/FoundationPose/weights/2024-01-11-20-02-45/config.yml"            "FoundationPose ScorePredictor config"
 check_file "imports/FoundationPose/weights/2024-01-11-20-02-45/model_best.pth"         "FoundationPose ScorePredictor"
+check_file "imports/FoundationPose/weights/2023-10-28-18-33-37/config.yml"            "FoundationPose PoseRefinePredictor config"
 check_file "imports/FoundationPose/weights/2023-10-28-18-33-37/model_best.pth"         "FoundationPose PoseRefinePredictor"
 
 # Hunyuan3D-2.1
