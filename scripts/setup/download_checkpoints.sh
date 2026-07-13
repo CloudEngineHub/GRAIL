@@ -134,44 +134,62 @@ PYEOF
 }
 
 # ════════════════════════════════════════════════════════════════════════════
+print_body_model_instructions() {
+    local smpl_dir="imports/GEM-SMPL/inputs/checkpoints/body_models/smpl"
+    local smplx_dir="imports/GEM-SMPL/inputs/checkpoints/body_models/smplx"
+
+    if [ -f "$smpl_dir/SMPL_NEUTRAL.pkl" ] && \
+       [ -f "$smplx_dir/SMPLX_NEUTRAL.npz" ]; then
+        ok "Licensed SMPL and SMPL-X body models"
+        return
+    fi
+
+    mkdir -p "$smpl_dir" "$smplx_dir"
+    warn "Please download the licensed body models manually:"
+    echo "  SMPL:   https://smpl.is.tue.mpg.de/"
+    echo "          SMPL_NEUTRAL.pkl -> $smpl_dir/"
+    echo "  SMPL-X: https://smpl-x.is.tue.mpg.de/"
+    echo "          SMPLX_NEUTRAL.npz -> $smplx_dir/"
+    echo ""
+}
+
 # 1. GEM-SMPL checkpoints (HuggingFace nvidia/PhysicalAI-...-GRAIL)
 # ════════════════════════════════════════════════════════════════════════════
 if [ "$SKIP_GEM_SMPL" = false ]; then
     section "GEM-SMPL checkpoints"
 
+    python3 -c "from huggingface_hub import hf_hub_download" 2>/dev/null || {
+        fail "huggingface_hub is required. Install with: pip install huggingface_hub"
+        exit 1
+    }
+
+    # These small, redistributable auxiliaries are checked on every run so an
+    # interrupted or older installation can be repaired without --force.
+    hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_extra.npy"
+    hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_h36m.npy"
+    hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_wham.npy"
+    hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/smpl_mean_params.npz"
+    hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl_neutral_J_regressor.pt"
+    hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smplx2smpl_sparse.pt"
+    hf_grail_download "GEM-SMPL/inputs/checkpoints/vimo/smpl_mean_params.npz"
+
     GEM_SMPL_MARKER="imports/GEM-SMPL/inputs/checkpoints/hmr2/epoch=10-step=25000.ckpt"
-    GEM_SMPL_BODY_MARKER="imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl"
-    GEM_SMPL_VIMO_MEAN="imports/GEM-SMPL/inputs/checkpoints/vimo/smpl_mean_params.npz"
     HMR4D_MARKER="imports/GEM-SMPL/outputs/mocap_mixed_v1/genmo/genmo_lg_jukebox_jukebox_new/version_0/checkpoints/last.ckpt"
 
-    if [ -f "$GEM_SMPL_MARKER" ] && [ -f "$GEM_SMPL_BODY_MARKER" ] && \
-       [ -f "$GEM_SMPL_VIMO_MEAN" ] && [ -f "$HMR4D_MARKER" ] && [ "$FORCE" = false ]; then
+    if [ -f "$GEM_SMPL_MARKER" ] && [ -f "$HMR4D_MARKER" ] && [ "$FORCE" = false ]; then
         ok "GEM-SMPL checkpoints (already exist)"
     else
-        python3 -c "from huggingface_hub import hf_hub_download" 2>/dev/null || {
-            fail "huggingface_hub is required. Install with: pip install huggingface_hub"
-            exit 1
-        }
-
-        # Inputs bundle: pre-trained externals (HMR2, ViTPose, VIMO, YOLO, SMPL/SMPL-X body models)
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_extra.npy"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_h36m.npy"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_wham.npy"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_FEMALE.pkl"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_MALE.pkl"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl/smpl_mean_params.npz"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smpl_neutral_J_regressor.pt"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smplx2smpl_sparse.pt"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/body_models/smplx/SMPLX_NEUTRAL.npz"
+        # Inputs bundle: pre-trained externals. Licensed SMPL/SMPL-X model
+        # files are intentionally excluded and installed manually below.
         hf_grail_download "GEM-SMPL/inputs/checkpoints/hmr2/epoch=10-step=25000.ckpt"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/vitpose/vitpose-h-multi-coco.pth"
-        hf_grail_download "GEM-SMPL/inputs/checkpoints/vimo/smpl_mean_params.npz"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/vimo/vimo_checkpoint.pth.tar"
         hf_grail_download "GEM-SMPL/inputs/checkpoints/yolo/yolov8x.pt"
         # Outputs: GRAIL's own GENMO (HMR4D) checkpoint
         hf_grail_download "GEM-SMPL/outputs/mocap_mixed_v1/genmo/genmo_lg_jukebox_jukebox_new/version_0/checkpoints/last.ckpt"
     fi
+
+    print_body_model_instructions
 else
     section "GEM-SMPL checkpoints (skipped)"
 fi
@@ -337,11 +355,11 @@ check_file() {
 }
 
 # GEM-SMPL
-check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl"     "SMPL neutral body model"
+check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl"     "SMPL neutral body model (manual)"
 check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/J_regressor_extra.npy" "SMPL extra joint regressor"
 check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smpl_neutral_J_regressor.pt" "SMPL neutral joint regressor"
 check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smplx2smpl_sparse.pt"     "SMPL-X to SMPL sparse mapper"
-check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smplx/SMPLX_NEUTRAL.npz" "SMPL-X body model"
+check_file "imports/GEM-SMPL/inputs/checkpoints/body_models/smplx/SMPLX_NEUTRAL.npz" "SMPL-X body model (manual)"
 check_file "imports/GEM-SMPL/inputs/checkpoints/hmr2/epoch=10-step=25000.ckpt"        "HMR2 checkpoint"
 check_file "imports/GEM-SMPL/inputs/checkpoints/vitpose/vitpose-h-multi-coco.pth"      "ViTPose (GEM-SMPL)"
 check_file "imports/GEM-SMPL/inputs/checkpoints/vimo/smpl_mean_params.npz"             "VIMO SMPL mean params"
