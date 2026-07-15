@@ -303,19 +303,19 @@ fi
 # 5. SONIC reference checkpoints (HuggingFace nvidia/PhysicalAI-...-GRAIL)
 # ════════════════════════════════════════════════════════════════════════════
 SONIC_BASE_DIR="SONIC/models/sonic_manipulation_base"
-SONIC_PNP_TABLE_DIR="SONIC/models/pnp_table"
-SONIC_PNP_GROUND_DIR="SONIC/models/pnp_ground"
-SONIC_STAIRS_DIR="SONIC/models/terrain_stairs"
+SONIC_PNP_TABLE_WARMSTART_DIR="SONIC/models/pnp_table_warmstart"
+SONIC_PNP_GROUND_WARMSTART_DIR="SONIC/models/pnp_ground_warmstart"
+SONIC_STAIRS_WARMSTART_DIR="SONIC/models/terrain_stairs_warmstart"
+SONIC_PNP_TABLE_RELEASE_DIR="SONIC/models/pnp_table_release"
+SONIC_PNP_GROUND_RELEASE_DIR="SONIC/models/pnp_ground_release"
+SONIC_TERRAIN_RELEASE_DIR="SONIC/models/terrain_release"
 
 if [ "$SKIP_SONIC" = false ]; then
     section "SONIC checkpoints"
 
     SONIC_BASE_MARKER="imports/$SONIC_BASE_DIR/last.pt"
-    SONIC_PNP_TABLE_MARKER="imports/$SONIC_PNP_TABLE_DIR/last.pt"
-    SONIC_PNP_GROUND_MARKER="imports/$SONIC_PNP_GROUND_DIR/last.pt"
-    SONIC_STAIRS_MARKER="imports/$SONIC_STAIRS_DIR/last.pt"
 
-    if [ -f "$SONIC_BASE_MARKER" ] && [ -f "$SONIC_PNP_TABLE_MARKER" ] && [ -f "$SONIC_PNP_GROUND_MARKER" ] && [ -f "$SONIC_STAIRS_MARKER" ] && [ "$FORCE" = false ]; then
+    if [ -f "$SONIC_BASE_MARKER" ] && [ "$FORCE" = false ]; then
         ok "SONIC checkpoints (already exist)"
     else
         python3 -c "from huggingface_hub import hf_hub_download" 2>/dev/null || {
@@ -323,14 +323,20 @@ if [ "$SKIP_SONIC" = false ]; then
             exit 1
         }
 
-        hf_grail_download "$SONIC_BASE_DIR/last.pt"
+        hf_grail_download "$SONIC_PNP_TABLE_WARMSTART_DIR/last.pt"
+        hf_grail_download "$SONIC_PNP_TABLE_WARMSTART_DIR/config.yaml"
+        hf_grail_download "$SONIC_PNP_GROUND_WARMSTART_DIR/last.pt"
+        hf_grail_download "$SONIC_PNP_GROUND_WARMSTART_DIR/config.yaml"
+        hf_grail_download "$SONIC_STAIRS_WARMSTART_DIR/last.pt"
+        hf_grail_download "$SONIC_STAIRS_WARMSTART_DIR/config.yaml"
+        hf_grail_download "$SONIC_PNP_TABLE_RELEASE_DIR/last.pt"
+        hf_grail_download "$SONIC_PNP_TABLE_RELEASE_DIR/config.yaml"
+        hf_grail_download "$SONIC_PNP_GROUND_RELEASE_DIR/last.pt"
+        hf_grail_download "$SONIC_PNP_GROUND_RELEASE_DIR/config.yaml"
+        hf_grail_download "$SONIC_TERRAIN_RELEASE_DIR/last.pt"
+        hf_grail_download "$SONIC_TERRAIN_RELEASE_DIR/config.yaml"
         hf_grail_download "$SONIC_BASE_DIR/model_config.yaml"
-        hf_grail_download "$SONIC_PNP_TABLE_DIR/last.pt"
-        hf_grail_download "$SONIC_PNP_TABLE_DIR/config.yaml"
-        hf_grail_download "$SONIC_PNP_GROUND_DIR/last.pt"
-        hf_grail_download "$SONIC_PNP_GROUND_DIR/config.yaml"
-        hf_grail_download "$SONIC_STAIRS_DIR/last.pt"
-        hf_grail_download "$SONIC_STAIRS_DIR/config.yaml"
+        hf_grail_download "$SONIC_BASE_DIR/last.pt"
     fi
 else
     section "SONIC checkpoints (skipped)"
@@ -389,12 +395,18 @@ check_file "imports/Hunyuan3D-2.1/hy3dpaint/ckpt/RealESRGAN_x4plus.pth"         
 # SONIC
 check_file "imports/$SONIC_BASE_DIR/last.pt"            "SONIC base behavior-model checkpoint"
 check_file "imports/$SONIC_BASE_DIR/model_config.yaml"  "SONIC base behavior-model config"
-check_file "imports/$SONIC_PNP_TABLE_DIR/last.pt"       "SONIC pnp_table checkpoint"
-check_file "imports/$SONIC_PNP_TABLE_DIR/config.yaml"   "SONIC pnp_table config"
-check_file "imports/$SONIC_PNP_GROUND_DIR/last.pt"      "SONIC pnp_ground checkpoint"
-check_file "imports/$SONIC_PNP_GROUND_DIR/config.yaml"  "SONIC pnp_ground config"
-check_file "imports/$SONIC_STAIRS_DIR/last.pt"         "SONIC terrain checkpoint"
-check_file "imports/$SONIC_STAIRS_DIR/config.yaml"     "SONIC terrain config"
+check_file "imports/$SONIC_PNP_TABLE_WARMSTART_DIR/last.pt"       "SONIC pnp_table warmstart checkpoint"
+check_file "imports/$SONIC_PNP_TABLE_WARMSTART_DIR/config.yaml"   "SONIC pnp_table warmstart config"
+check_file "imports/$SONIC_PNP_GROUND_WARMSTART_DIR/last.pt"      "SONIC pnp_ground warmstart checkpoint"
+check_file "imports/$SONIC_PNP_GROUND_WARMSTART_DIR/config.yaml"  "SONIC pnp_ground warmstart config"
+check_file "imports/$SONIC_STAIRS_WARMSTART_DIR/last.pt"         "SONIC terrain stairs warmstart checkpoint"
+check_file "imports/$SONIC_STAIRS_WARMSTART_DIR/config.yaml"     "SONIC terrain stairs warmstart config"
+check_file "imports/$SONIC_PNP_TABLE_RELEASE_DIR/last.pt"       "SONIC pnp_table checkpoint"
+check_file "imports/$SONIC_PNP_TABLE_RELEASE_DIR/config.yaml"   "SONIC pnp_table config"
+check_file "imports/$SONIC_PNP_GROUND_RELEASE_DIR/last.pt"      "SONIC pnp_ground checkpoint"
+check_file "imports/$SONIC_PNP_GROUND_RELEASE_DIR/config.yaml"  "SONIC pnp_ground config"
+check_file "imports/$SONIC_TERRAIN_RELEASE_DIR/last.pt"         "SONIC terrain checkpoint"
+check_file "imports/$SONIC_TERRAIN_RELEASE_DIR/config.yaml"     "SONIC terrain config"
 
 # ── Summary ────────────────────────────────────────────────────────────────
 echo ""

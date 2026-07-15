@@ -29,8 +29,8 @@ This sets up IsaacLab, GMR, GRAIL, and the training stack in one conda env.
 
 ## Checkpoints
 
-The base behavior-model warm-start and the task-specific reference
-bundles for finetuning are all fetched by the project-wide setup script:
+The pretrained base behavior-model, task-specific warmstart
+checkpoints for finetuning and reference checkpoints trained on released data are all fetched by the project-wide setup script:
 
 ```bash
 bash scripts/setup/download_checkpoints.sh           # all submodules
@@ -43,14 +43,17 @@ This lands them under `imports/SONIC/models/`:
 
 ```
 imports/SONIC/models/
-├── sonic_manipulation_base/   # base warm-start for pickup and manipulation: last.pt + model_config.yaml
-├── pnp_table/                 # pickup table reference: last.pt + config.yaml
-├── pnp_ground/                # pickup ground reference: last.pt + config.yaml
-└── terrain_stairs/            # terrain stairs reference: last.pt + config.yaml
+├── sonic_manipulation_base/   # pretrained WBC base for pickup and manipulation: last.pt + model_config.yaml
+├── pnp_table_warmstart/       # pickup table warm start: last.pt + config.yaml
+├── pnp_ground_warmstart/      # pickup ground warm start: last.pt + config.yaml
+├── terrain_stairs_warmstart/  # terrain (stairs only) warm start: last.pt + config.yaml
+├── pnp_table_release/         # pickup table reference: last.pt + config.yaml
+├── pnp_ground_release/        # pickup ground reference: last.pt + config.yaml
+└── terrain_release/           # terrain (curb + slope + stairs + sitting) reference: last.pt + config.yaml
 ```
 
 Store path references in experiment configs as relative to
-`imports/SONIC/`, not to the GRAIL root — e.g. `models/pnp_table/last.pt`.
+`imports/SONIC/`, not to the GRAIL root — e.g. `models/pnp_table_warmstart/last.pt`.
 The training commands below assume `cd imports/SONIC` first, so those
 relative paths resolve correctly.
 
@@ -105,7 +108,7 @@ python -u train_agent_trl.py \
     ++manager_env.commands.motion.motion_lib_cfg.bps_dir=${BPS_DIR}
 ```
 
-## Running training
+## Training
 
 ### Pick-up and advanced manipulation
 
@@ -151,17 +154,17 @@ Pick-up and manipulation launch inputs:
 
 #### Finetuning a pick-up policy
 
-To continue from an existing pick-up run, use the matching reference
-bundle (downloaded by `download_checkpoints.sh` above):
+To continue from an existing pick-up run, use the matching bundles
+(downloaded by `download_checkpoints.sh` above):
 
-| Config | Reference config | Reference checkpoint |
-|--------|------------------|----------------------|
-| `manager/universal_token/hoi/pnp_table`  | `models/pnp_table/config.yaml`  | `models/pnp_table/last.pt`  |
-| `manager/universal_token/hoi/pnp_ground` | `models/pnp_ground/config.yaml` | `models/pnp_ground/last.pt` |
+| Config | Warm-start checkpoint |
+|--------|-----------------------|
+| `manager/universal_token/hoi/pnp_table`  | `models/pnp_table_warmstart/last.pt`  |
+| `manager/universal_token/hoi/pnp_ground` | `models/pnp_ground_warmstart/last.pt` |
 
-Use the reference `config.yaml` for provenance and evaluation; the finetune
-command below selects the public release config and warm-resumes from
-`last.pt`. Write the new run to a separate `experiment_dir`.
+The finetune command below selects the release config and warm-resumes
+from the `_warmstart` `last.pt`. Write the new run to a separate
+`experiment_dir`.
 
 ```bash
 conda activate sonic
@@ -172,7 +175,7 @@ python -u train_agent_trl.py \
     +exp=manager/universal_token/hoi/pnp_table \
     num_envs=2048 headless=True \
     ++resume=True \
-    ++checkpoint=models/pnp_table/last.pt \
+    ++checkpoint=models/pnp_table_warmstart/last.pt \
     experiment_dir=${FINETUNE_DIR} \
     ++algo.config.num_learning_iterations=10000 \
     ++manager_env.commands.motion.motion_lib_cfg.motion_file=${DATA_DIR}/robot \
@@ -182,7 +185,7 @@ python -u train_agent_trl.py \
 ```
 
 Use `+exp=manager/universal_token/hoi/pnp_ground` and
-`++checkpoint=models/pnp_ground/last.pt` for ground pick-up data.
+`++checkpoint=models/pnp_ground_warmstart/last.pt` for ground pick-up data.
 
 ### Terrain-aware tracking
 
@@ -223,15 +226,12 @@ grep those to confirm the slicer is doing what you expect.
 
 #### Finetuning a terrain policy
 
-Terrain finetuning uses the same warm-resume pattern: keep
-`models/terrain_stairs/config.yaml` with `models/terrain_stairs/last.pt`,
-write to a new output directory, and point `DATA_DIR` at the next
-terrain-aware motion-library partition.
-
-The published reference bundle (`models/terrain_stairs/`) is the
+Terrain finetuning uses the same warm-resume pattern: warm-resume from
+`models/terrain_stairs_warmstart/last.pt`, write to a new output directory,
+and point `DATA_DIR` at the next terrain-aware motion-library partition.
+The published warm-start bundle (`models/terrain_stairs_warmstart/`) is the
 **stairs** policy only — use it as the warm-start when finetuning on any
-stairs-like dataset. Reference bundles for the other terrain types
-(curb, slope, etc.) will be published in a future release.
+stairs-like dataset.
 
 ```bash
 conda activate sonic
@@ -242,7 +242,7 @@ python -u train_agent_trl.py \
     +exp=manager/universal_token/scene/terrain_tracking \
     num_envs=4096 headless=True \
     ++resume=True \
-    ++checkpoint=models/terrain_stairs/last.pt \
+    ++checkpoint=models/terrain_stairs_warmstart/last.pt \
     experiment_dir=${FINETUNE_DIR} \
     ++algo.config.num_learning_iterations=20000 \
     ++manager_env.commands.motion.motion_lib_cfg.motion_file=${DATA_DIR}/robot \
@@ -291,11 +291,81 @@ logs_rl/TRL_G1_Track/manager/<config_path>/<exp_name>-<timestamp>/
 W&B run name and project come from the `+opt=wandb` Hydra opt group
 (`gear_sonic/config/opt/wandb.yaml`).
 
-## Evaluation
+## Tracking released data
 
 See {src}`imports/SONIC docs <imports/SONIC/docs/>`
-for eval workflows. GRAIL does not add eval tooling — eval runs against the
-training checkpoint directory format directly.
+for the full eval-loop and metric workflows. GRAIL does not add eval tooling —
+eval runs against the training checkpoint directory format directly, so the
+released `_release` reference bundles work as-is.
+
+The `_release` reference checkpoints (fetched by `download_checkpoints.sh`) can
+be rolled out on the released motion libraries to reproduce the reference
+rollouts as videos. The command below is the single-GPU local form which invokes 
+`eval_agent_trl.py` directly (single-shot, respects `+checkpoint=<path>`) in render mode.
+
+Pick a released policy and its matching released motion library:
+
+| Policy | Reference checkpoint | Released motion library (example) |
+|--------|----------------------|-----------------------------------|
+| `pnp_table`  | `models/pnp_table_release/last.pt`  | `data/pickup_table`  |
+| `pnp_ground` | `models/pnp_ground_release/last.pt` | `data/pickup_ground` |
+| `terrain`    | `models/terrain_release/last.pt`    | `data/stairs_p1`     |
+
+Set `CHECKPOINT` to the reference checkpoint, `DATA_DIR` to the matching
+released motion library (with `meta/`, `robot/`, `objects/`, `object_usd/`), `BPS_DIR` to
+its BPS encodings (`bps/` only needed for pickup), and `MOTION_KEYS` to a comma-separated list of motion stems
+to render:
+
+```bash
+conda activate sonic
+export HYDRA_FULL_ERROR=1 PYTHONUNBUFFERED=1
+
+cd imports/SONIC
+
+CHECKPOINT=models/pnp_table_release/last.pt
+DATA_DIR=data/pickup_table
+BPS_DIR=${DATA_DIR}/bps
+MOTION_KEYS="pickup_table__alcohol_0__000"        # comma-separated motion stems
+NUM_ENVS=8
+SAVE_DIR="$(dirname ${CHECKPOINT})/renderings/${MOTION_KEYS}"
+
+python -u gear_sonic/eval_agent_trl.py \
+    +checkpoint=${CHECKPOINT} \
+    +headless=True \
+    ++eval_callbacks=im_eval \
+    ++run_eval_loop=False \
+    ++num_envs=${NUM_ENVS} \
+    ++manager_env.commands.motion.motion_lib_cfg.motion_file=${DATA_DIR}/robot \
+    ++manager_env.commands.motion.motion_lib_cfg.object_motion_file=${DATA_DIR}/objects \
+    ++manager_env.config.object_usd_path=${DATA_DIR}/object_usd \
+    ++manager_env.commands.motion.motion_lib_cfg.bps_dir=${BPS_DIR} \
+    ++manager_env.commands.motion.motion_lib_cfg.filter_motion_keys=[${MOTION_KEYS}] \
+    ++manager_env.commands.motion.motion_lib_cfg.multi_thread=False \
+    ++manager_env.commands.motion.motion_lib_cfg.motion_shard_world_size=1 \
+    ++manager_env.commands.motion.motion_lib_cfg.motion_shard_rank=0 \
+    ++manager_env.config.render_results=True \
+    ++manager_env.config.save_rendering_dir=${SAVE_DIR} \
+    ++manager_env.config.env_spacing=10.0 \
+    ++manager_env.config.max_render_envs=${NUM_ENVS} \
+    ++manager_env.recorders.render_envs._target_=gear_sonic.envs.manager_env.mdp.recorders.RenderEnvsRecorderCfg \
+    ++manager_env.recorders.render_envs.video_save_path=${SAVE_DIR} \
+    ++manager_env.recorders.render_envs.video_quality=5
+```
+
+Rendered videos land at `${SAVE_DIR}/*.mp4`. For `pnp_ground`, swap
+`CHECKPOINT`/`DATA_DIR` for the ground row above; terrain uses the
+`terrain_tracking` config's `terrain_motion_dir` layout instead of `bps_dir`.
+
+Eval-specific overrides (beyond the shared data-path flags) and why they are
+needed:
+
+| Flag | Effect |
+|------|--------|
+| `+checkpoint=<path>` | Single-shot checkpoint to roll out. `eval_agent_trl.py` respects it directly (unlike `eval_exp.py`, which watches for `model_step_*.pt`). |
+| `++run_eval_loop=False` + `++manager_env.recorders.render_envs.*` | Render mode: the video is produced by the injected `RenderEnvsRecorderCfg` recorder, not the eval-loop rollout. The recorder must be injected via dot overrides because the saved `config.yaml` ships an empty `recorders` section. |
+| `++manager_env.commands.motion.motion_lib_cfg.filter_motion_keys=[...]` | Restricts the rollout to the listed motion stems. |
+| `++manager_env.config.max_render_envs=<N>` | Flips `im_eval` into render-only mode; without it the callback tries to eval the whole motion library and never renders the filtered set. |
+| `++...motion_lib_cfg.motion_shard_world_size=1` / `++...motion_shard_rank=0` | Resets the multi-node sharding baked into the trained `config.yaml` (e.g. `64`) so single-GPU eval doesn't slice the motions down to an empty shard. |
 
 ## Troubleshooting
 
