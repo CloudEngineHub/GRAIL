@@ -230,32 +230,58 @@ G1_ISAACLAB_TO_MUJOCO_DOF = [
     28,
 ]
 
-# Skeleton DOF axis for computing pose_aa from joint angles.
-# Each DOF rotates around a specific axis. For G1 in Mujoco order,
-# loaded at runtime from the skeleton or mesh parsers.
+# Skeleton DOF axis for computing pose_aa from joint angles. Each G1 body DOF
+# (Mujoco order) is a 1-DOF revolute joint rotating about one of X/Y/Z, so its
+# axis-angle contribution is `dof_value * axis`. Loaded from the skeleton meta
+# pkl. NOTE: this file must exist on the machine running the export (it is not
+# hard-coded) — if it is missing, _get_dof_axis raises instead of returning None,
+# because a zeroed body pose_aa silently corrupts the export (MotionLibBase FKs
+# the tracked pose from pose_aa, not from `dof`).
 _DOF_AXIS_CACHE = None
 
 
 def _get_dof_axis():
-    """Load DOF axis from skeleton metadata if available."""
+    """Load the G1 body DOF rotation-axis table (shape (29, 3)) from skeleton meta.
+
+    Raises loudly if the meta pkl is missing or malformed — the export must never
+    fall back to a zeroed pose_aa.
+    """
     global _DOF_AXIS_CACHE
     if _DOF_AXIS_CACHE is not None:
         return _DOF_AXIS_CACHE
-    try:
-        meta = joblib.load(
-            os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                "data",
-                "g1_smplx",
-                "g1_skeleton_meta.pkl",
-            )
+    meta_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "data",
+        "g1_smplx",
+        "g1_skeleton_meta.pkl",
+    )
+    if not os.path.exists(meta_path):
+        raise FileNotFoundError(
+            f"g1_skeleton_meta.pkl not found at {meta_path}. It is required to build "
+            "pose_aa (dof_axis). On the cluster, upload data/g1_smplx/ to the repo root."
         )
-        if "skeleton_info" in meta and "dof_axis" in meta["skeleton_info"]:
-            _DOF_AXIS_CACHE = np.array(meta["skeleton_info"]["dof_axis"])
-            return _DOF_AXIS_CACHE
-    except Exception:
-        pass
-    return None
+    meta = joblib.load(meta_path)
+    try:
+        dof_axis = np.array(meta["skeleton_info"]["dof_axis"], dtype=np.float32)
+    except (KeyError, TypeError) as exc:
+        raise KeyError(f"skeleton_info.dof_axis missing/malformed in {meta_path}") from exc
+    _DOF_AXIS_CACHE = dof_axis
+    return dof_axis
+
+
+def resample_nn_time(arr, src_fps, tgt_len, tgt_fps):
+    """Time-based nearest-neighbor resample of a 1-D array to ``tgt_len`` frames.
+
+    Nearest-neighbor (not linear) preserves the discrete -1/+1 hand-action step;
+    time-based (not index-based) aligns events by absolute time, correct when the
+    source and target run at different fps for the same wall-clock motion.
+    """
+    arr = np.asarray(arr)
+    src_len = arr.shape[0]
+    t = np.arange(tgt_len, dtype=np.float64) / float(tgt_fps)
+    idx = np.round(t * float(src_fps)).astype(int)
+    idx = np.clip(idx, 0, src_len - 1)
+    return arr[idx]
 
 
 def trajectory_to_robot_pkl(trajectory, source_robot_data=None):
@@ -292,13 +318,21 @@ def trajectory_to_robot_pkl(trajectory, source_robot_data=None):
     fps = trajectory["fps"]
     n_frames = len(body_dof)
 
-    # Build pose_aa: (T, 30, 3) — joint 0 is root rotation, joints 1-29 are DOF rotations
+    # Build pose_aa: (T, 30, 3) — joint 0 is root rotation, joints 1-29 are DOF rotations.
+    # MotionLibBase reconstructs the tracked body pose from pose_aa via FK (NOT from
+    # `dof`), so pose_aa[:, 1:] MUST be populated — a zeroed body pose_aa makes the
+    # policy track a default pose. dof_axis is embedded (see _get_dof_axis), so this
+    # is always computable regardless of what data files exist on the cluster.
+    dof_axis = _get_dof_axis()
+    if dof_axis is None or dof_axis.shape != (29, 3):
+        raise RuntimeError(
+            f"dof_axis unavailable or wrong shape ({None if dof_axis is None else dof_axis.shape}); "
+            "cannot build pose_aa. This must never happen with the embedded G1_DOF_AXIS."
+        )
     pose_aa = np.zeros((n_frames, 30, 3), dtype=np.float32)
     pose_aa[:, 0, :] = root_rotvec
-    dof_axis = _get_dof_axis()
-    if dof_axis is not None and dof_axis.shape[0] == 29:
-        # pose_aa[t, j+1, :] = dof[t, j] * dof_axis[j, :]
-        pose_aa[:, 1:, :] = body_dof[:, :, np.newaxis] * dof_axis[np.newaxis, :, :]
+    # pose_aa[t, j+1, :] = dof[t, j] * dof_axis[j, :]
+    pose_aa[:, 1:, :] = body_dof[:, :, np.newaxis] * dof_axis[np.newaxis, :, :]
 
     # Generate placeholder SMPL joints (zeros) — real values require FK recomputation
     smpl_joints = np.zeros((n_frames, 24, 3), dtype=np.float32)
@@ -315,16 +349,36 @@ def trajectory_to_robot_pkl(trajectory, source_robot_data=None):
     # Hand actions: extract from 43-DOF trajectory
     if dof_pos.shape[1] > 29:
         hand_dof = dof_pos[:, 29:]  # (T, 14) in IsaacLab articulation order
-        # Left hand: joints 29-35, Right hand: joints 36-42
-        left_hand = hand_dof[:, :7]
-        right_hand = hand_dof[:, 7:]
         # Full per-joint trajectory — kept so downstream consumers (visualizer,
-        # SONIC motion_lib's `hand_dof_pos`) can recover the exact gripper state
-        # instead of having to reverse-engineer it from the scalar averages.
+        # SONIC motion_lib's `hand_dof_pos`) can recover the exact gripper state.
         robot_data["hand_dof_pos"] = hand_dof.astype(np.float32)
-        # Heuristic: mean absolute joint angle as grip strength (0=open, ~1=closed)
-        robot_data["hand_action_left"] = np.mean(np.abs(left_hand), axis=1).astype(np.float32)
-        robot_data["hand_action_right"] = np.mean(np.abs(right_hand), axis=1).astype(np.float32)
+
+        # hand_action_left/right is a FEED-FORWARD gripper command replayed by the
+        # tracking policy (pnp_table sets use_motion_hand_actions=true), interpreted
+        # with a *discrete* convention: -1.0 = open, +1.0 = closed. It is NOT a
+        # continuous grip strength. The authoritative signal (with correct grasp
+        # anticipation timing) lives in the SOURCE retargeted motion, so copy it
+        # from there and resample onto this rollout's fps/frame count.
+        src_hl = source_robot_data.get("hand_action_left") if source_robot_data else None
+        src_hr = source_robot_data.get("hand_action_right") if source_robot_data else None
+        if src_hl is not None and src_hr is not None:
+            src_fps = float(source_robot_data.get("fps", fps))
+            robot_data["hand_action_left"] = resample_nn_time(
+                np.asarray(src_hl, dtype=np.float32), src_fps, n_frames, float(fps)
+            ).astype(np.float32)
+            robot_data["hand_action_right"] = resample_nn_time(
+                np.asarray(src_hr, dtype=np.float32), src_fps, n_frames, float(fps)
+            ).astype(np.float32)
+        else:
+            # No source hand_action available. The old mean(abs(hand_dof)) heuristic
+            # is >= 0 everywhere, which the discrete primitive reads as "always
+            # closed" — a silent correctness bug. Refuse to emit a bogus signal.
+            raise ValueError(
+                "Cannot recover hand_action: source_robot_data lacks "
+                "'hand_action_left'/'hand_action_right'. Pass --source_data pointing "
+                "at the retargeted motion lib that contains them (the discrete "
+                "-1=open/+1=closed convention cannot be reconstructed from hand DOFs)."
+            )
 
     return robot_data
 
