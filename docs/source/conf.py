@@ -106,8 +106,8 @@ html_theme_options = {
     },
     "icon_links": [
         {
-            "name": "GEAR-SONIC",
-            "url": "https://nvlabs.github.io/GEAR-SONIC/",
+            "name": "GRAIL",
+            "url": "https://research.nvidia.com/labs/dair/grail/",
             "icon": "fa-solid fa-globe",
             "type": "fontawesome",
         },
