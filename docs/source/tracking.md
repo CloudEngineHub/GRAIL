@@ -325,7 +325,7 @@ cd imports/SONIC
 CHECKPOINT=models/pnp_table_release/last.pt
 DATA_DIR=data/pickup_table
 BPS_DIR=${DATA_DIR}/bps
-MOTION_KEYS="pickup_table__alcohol_0__000"        # comma-separated motion stems
+MOTION_KEYS="pickup_table__apple_0__000"        # comma-separated motion stems
 NUM_ENVS=8
 SAVE_DIR="$(dirname ${CHECKPOINT})/renderings/${MOTION_KEYS}"
 

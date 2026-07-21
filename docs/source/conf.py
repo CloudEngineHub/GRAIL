@@ -5,7 +5,7 @@
 
 project = "GRAIL"
 copyright = "2026, NVIDIA"
-author = "NVIDIA GEAR Team"
+author = "NVIDIA DAIR Team"
 release = "0.1.0"
 version = "0.1"
 
