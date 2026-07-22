@@ -81,18 +81,19 @@ relative paths resolve correctly.
 
 ## Task-general tracking configs overview
 
-Current state of `imports/SONIC/gear_sonic/config/exp/manager/universal_token/`:
+Our released tracking configs are listed in `imports/SONIC/gear_sonic/config/exp/manager/universal_token/`:
 
-| Path                             | Purpose                                                                                          |
-|----------------------------------|--------------------------------------------------------------------------------------------------|
-| `scene/terrain_tracking.yaml`    | Shared height-map + object-state terrain-aware tracking config used by the `tnfh`, `tnfhp1`, and `tnch` wrappers |
-| `hoi/pnp_table.yaml`             | Self-contained tabletop pick-up release config                                                   |
-| `hoi/pnp_ground.yaml`            | Self-contained ground pick-up release config                                                     |
-| `hoi/advanced_manip_table.yaml`  | Self-contained advanced-manipulation tabletop config                                             |
-| `hoi/advanced_manip_ground.yaml` | Self-contained advanced-manipulation ground config                                               |
+
+| Path                             | Purpose                                                    | Supported scene config(s) |
+|----------------------------------|------------------------------------------------------------|--------------------------|
+| `scene/terrain_tracking.yaml`    | Shared height-map + object-state terrain-aware tracking config | `indoor1-sitting`, `indoor1-terrain-curb`, `indoor1-terrain-slope`, `indoor1-syn-stairs`, `indoor1-gen-stairs` |
+| `hoi/pnp_table.yaml`             | Self-contained tabletop pick-up release config             | `indoor2-pickup-table` |
+| `hoi/pnp_ground.yaml`            | Self-contained ground pick-up release config               | `indoor2-pickup-ground` |
+| `hoi/advanced_manip_table.yaml`  | Self-contained advanced-manipulation tabletop config       | `indoor2-manipulation` |
+| `hoi/advanced_manip_ground.yaml` | Self-contained advanced-manipulation ground config         | `indoor1-manipulation` |
 
 The release configs share the same launch pattern: choose the Hydra config,
-then pass runtime data paths through Hydra overrides.
+then pass runtime data paths through Hydra overrides. **Note: please pick the right tracking config given the scene config used in 2D HOI generation**
 
 ## Quick smoke test
 
