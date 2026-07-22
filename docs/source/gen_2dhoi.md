@@ -2,7 +2,7 @@
 
 Synthesizes short videos of a human interacting with a 3D object, by
 chaining physics simulation, multi-view Blender rendering, and a video
-foundation model (default: [Kling AI](https://klingai.com/global/dev)).
+foundation model (default: [Kling AI](https://kling.ai/dev)).
 
 ## Quickstart
 

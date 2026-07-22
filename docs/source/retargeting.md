@@ -9,25 +9,28 @@ The retargeting pipeline is a standalone subpackage:
 
 ## Install
 
-1. Initialize the two submodules:
+1. Initialize the GMR submodule:
    ```bash
    git submodule update --init imports/GMR
    ```
 
-2. Create a conda env with IsaacLab + IsaacSim + PyTorch (CUDA) following
-   {blob}`imports/SONIC/README.md`. The default env
-   name is `sonic`.
+2. In the published Docker image, activate the preinstalled environment:
 
-3. Install the retargeting stack on top:
+   ```bash
+   conda activate sonic
+   ```
+
+   For a source installation, run the one-shot installer from the GRAIL root:
+
    ```bash
    bash scripts/setup/install_env_sonic.sh
    ```
 
-   This applies GRAIL-specific {blob}`GMR overrides <grail/retargeting/gmr_overrides/README.md>`
-   on top of the public [YanjieZe/GMR](https://github.com/YanjieZe/GMR)
-   submodule, then pip-installs GMR, GRAIL, and retargeting Python deps
-   (`smplx`, `mujoco`, `usd-core`, …) into the active conda env. The script is
-   idempotent — rerun it any time the submodule pin is bumped.
+   This creates the `sonic` environment and installs Isaac Sim, Isaac Lab,
+   public GMR, GRAIL, and the remaining retargeting/training dependencies.
+   GRAIL-specific GMR behavior is applied at runtime by
+   {blob}`grail.adapters.gmr <grail/adapters/gmr.py>`; the public GMR submodule
+   is not modified. The script is idempotent.
 
    Override the env name via `GRAIL_SONIC_ENV=<name>`:
    ```bash
@@ -38,16 +41,35 @@ The retargeting pipeline is a standalone subpackage:
 
 ### End-to-end (recommended)
 
+The first argument must point to **your own successful 4D-HOI reconstruction
+output** inside the current checkout or container. Replace
+`<your_results_dir>` with the value passed to reconstruction's `--results_dir`,
+which defaults to `results`. The default SMPL-X reconstruction config writes
+validated results to `generation/4dhoi_recon_smplx_valid/`. This directory
+must contain at least one nested `hoi_data/hoi_data.pkl`; the second argument
+only chooses the new folder name under `data/motion_lib/`. Use the validated
+root to process every dataset, or append a dataset subdirectory to process only
+that dataset.
+
 ```bash
 conda activate sonic
 export DISPLAY=:1                    # GMR uses mujoco viewer, needs a display
 
+RECON_DIR="<your_results_dir>/generation/4dhoi_recon_smplx_valid"
+OUTPUT_FOLDER="<your_output_folder>"
+
+# This must print at least one file before retargeting.
+find "$RECON_DIR" -type f -path '*/hoi_data/hoi_data.pkl' -print -quit
+
 bash grail/retargeting/scripts/retarget_pipeline.sh \
-    data/genhoi/benchmark_v3/generation/4dhoi_recon_valid/Hunyuan \
-    benchmark_v3_0203
+    "$RECON_DIR" \
+    "$OUTPUT_FOLDER"
 ```
 
-Outputs under `data/motion_lib/benchmark_v3_0203/`:
+If the `find` command prints nothing, correct `RECON_DIR` or verify that the
+reconstruction stage produced valid results before continuing.
+
+Outputs under `data/motion_lib/<your_output_folder>/`:
 
 | Directory  | Contents                                          |
 |------------|---------------------------------------------------|
@@ -56,7 +78,7 @@ Outputs under `data/motion_lib/benchmark_v3_0203/`:
 | `object_usd/` | IsaacLab-ready USD assets                      |
 | `meta/`    | Scene metadata (table pose, object name, …)       |
 
-Plus a preprocessed twin at `data/motion_lib/benchmark_v3_0203_ha/`:
+Plus a preprocessed twin at `data/motion_lib/<your_output_folder>_ha/`:
 
 | Directory  | Contents                                                      |
 |------------|---------------------------------------------------------------|
@@ -64,7 +86,7 @@ Plus a preprocessed twin at `data/motion_lib/benchmark_v3_0203_ha/`:
 | `objects/` | Object motions, contact points filtered to ≥ lift frame       |
 | `meta/`    | Per-motion meta (table pose/quat/size, object name)           |
 
-And a BPS encoding at `data/motion_lib/benchmark_v3_0203/bps/` (multi-object
+And a BPS encoding at `data/motion_lib/<your_output_folder>/bps/` (multi-object
 datasets only).
 
 ### Individual stages
@@ -72,17 +94,20 @@ datasets only).
 Each stage is a plain Python CLI and can run in isolation.
 
 ```bash
+RECON_DIR="<your_results_dir>/generation/4dhoi_recon_smplx_valid"
+OUTPUT_BASE="data/motion_lib/<your_output_folder>"
+
 # Stage 1 — retarget SMPL-X → G1
 python -m grail.retargeting.retarget \
-    --data_dir data/genhoi/benchmark_v3/generation/4dhoi_recon_valid/Hunyuan \
+    --data_dir "$RECON_DIR" \
     --all --robot unitree_g1 --no_viewer \
-    --output_dir data/motion_lib/benchmark_v3_0203
+    --output_dir "$OUTPUT_BASE"
 
 # Stage 2 — hand-action + table-geometry processing
 python -m grail.retargeting.process \
-    --input  data/motion_lib/benchmark_v3_0203 \
-    --output data/motion_lib/benchmark_v3_0203_ha \
-    --meta_pkl grail/retargeting/data/g1_skeleton_meta.pkl \
+    --input  "$OUTPUT_BASE" \
+    --output "${OUTPUT_BASE}_ha" \
+    --meta_pkl data/g1_smplx/g1_skeleton_meta.pkl \
     --include_contact_points --grasp_from_lift \
     --lift_threshold 0.02 --grasp_anticipation_frames 10 \
     --skip_no_lift --per_object
@@ -92,8 +117,8 @@ python -m grail.retargeting.process \
 
 # Stage 3 — BPS shape encoding (multi-object datasets only)
 python -m grail.retargeting.compute_bps \
-    --object_usd_dir data/motion_lib/benchmark_v3_0203/object_usd \
-    --output_dir     data/motion_lib/benchmark_v3_0203/bps
+    --object_usd_dir "$OUTPUT_BASE/object_usd" \
+    --output_dir     "$OUTPUT_BASE/bps"
 ```
 
 The shell wrappers under
@@ -109,9 +134,13 @@ with large environmental objects, not hand-held manipulation. Use
 `--zero_out_wrist` to skip hand IK:
 
 ```bash
+TERRAIN_RECON_DIR="<your_results_dir>/generation/4dhoi_recon_smplx_valid"
+TERRAIN_OUTPUT_FOLDER="<your_terrain_output_folder>"
+
 bash grail/retargeting/scripts/retarget.sh \
-    data/genhoi/results_terrain_v6/generation/4dhoi_recon_valid/Hunyuan \
-    terrain_v6 --zero_out_wrist
+    "$TERRAIN_RECON_DIR" \
+    "$TERRAIN_OUTPUT_FOLDER" \
+    --zero_out_wrist
 ```
 
 Then skip the `process.sh` step — terrain data does not need hand-action
@@ -120,9 +149,10 @@ preprocessing.
 ## How the pipeline works
 
 1. **GMR (General Motion Retargeting)** — SMPL-X body model → Unitree G1 MJCF
-   via inverse kinematics. The retarget engine lives in
-   {src}`imports/GMR` with NVIDIA overrides applied by the install
-   script (see {blob}`override README <grail/retargeting/gmr_overrides/README.md>`).
+   via inverse kinematics. The retarget engine is the public
+   [YanjieZe/GMR](https://github.com/YanjieZe/GMR) submodule; GRAIL-specific
+   compatibility behavior is applied at runtime by
+   {blob}`grail.adapters.gmr <grail/adapters/gmr.py>`.
 2. **Object mesh → USD** — `convert_mesh.py` runs IsaacLab's `MeshConverter`
    headlessly to produce simulation-ready USD assets with convex-hull collision.
 3. **Hand-action + table geometry** — `process.py` derives hand open/close
@@ -142,5 +172,6 @@ preprocessing.
 | `ModuleNotFoundError: general_motion_retargeting` | Rerun `bash scripts/setup/install_env_sonic.sh` — it installs GMR editable in the active env.         |
 | `ModuleNotFoundError: pxr`                        | `pip install usd-core` (standalone PXR; Isaac Sim-vendored `pxr` is only importable inside kit apps). |
 | Black mujoco viewer / `glfwInit failed`           | `export DISPLAY=:1` **before** activating conda (it is an env var, not a conda setting).              |
+| `FileNotFoundError: .../robot` during processing  | Retargeting found no inputs. Update the first pipeline argument to your reconstruction directory and confirm `find "$RECON_DIR" -type f -path '*/hoi_data/hoi_data.pkl'` returns files. |
 | Retarget skips motions as "no lift"              | `process.py` rejects motions where the object never rises 2 cm. Override with `--lift_threshold 0.01`. |
-| Stale GMR overrides after `git pull`             | Rerun the install script — `rsync` step re-applies `grail/retargeting/gmr_overrides/` idempotently.   |
+| `imports/GMR` is empty                            | Run `git submodule update --init imports/GMR`, then rerun the installer for a source installation.   |

@@ -2,7 +2,7 @@
 
 GRAIL has two complementary 3D-asset pipelines: a **procedural** generator
 for terrain primitives (curbs, slopes, stairs) and an **AI-generated**
-pipeline using Tencent's [Hunyuan3D-2.1](https://github.com/Tencent/Hunyuan3D-2.1)
+pipeline using Tencent's [Hunyuan3D-2.1](https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1)
 for textured object meshes from text.
 
 ## Procedural terrain

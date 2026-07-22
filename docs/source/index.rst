@@ -7,7 +7,7 @@ GRAIL Documentation
      <a href="https://research.nvidia.com/labs/dair/grail/"><img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"></a>
      <a href="https://arxiv.org/pdf/2606.05160"><img src="https://img.shields.io/badge/Paper-PDF-red?style=flat-square" alt="Paper"></a>
      <a href="https://github.com/NVlabs/GRAIL/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-NVIDIA-76B900?style=flat-square" alt="License"></a>
-     <a href="https://github.com/isaac-sim/IsaacLab/releases/tag/v2.3.0"><img src="https://img.shields.io/badge/IsaacLab-2.3.0-76B900?style=flat-square" alt="IsaacLab"></a>
+     <a href="https://github.com/isaac-sim/IsaacLab/releases/tag/v2.3.2"><img src="https://img.shields.io/badge/IsaacLab-2.3.2-76B900?style=flat-square" alt="IsaacLab"></a>
    </p>
 
 .. image:: ../../assets/videos/teaser.gif

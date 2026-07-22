@@ -10,7 +10,10 @@ The repo ships three conda envs:
 
 ## Docker (Recommended)
 
-The Docker image ships pre-installed system dependencies, CUDA 12.8, and the `grail` + `hunyuan` conda envs (Python deps, PyTorch, PyTorch3D, detectron2, CUDA extensions). Bind-mount your repo and run the lightweight setup script to validate GPU/Python-specific native extensions and download Blender:
+The Docker image ships pre-installed system dependencies, CUDA 12.8, and the
+`grail`, `hunyuan`, and `sonic` conda envs. Bind-mount your repo and run the
+lightweight setup script to validate GPU/Python-specific native extensions and
+download Blender:
 
 ```bash
 git clone https://github.com/NVlabs/GRAIL.git
@@ -27,7 +30,7 @@ cd /workspace/grail
 bash scripts/setup/install_env_docker.sh   # validates native extensions, downloads Blender (~6.4GB)
 bash scripts/setup/download_checkpoints.sh # model checkpoints
 bash scripts/setup/download_comasset.sh    # datasets (optional)
-source /root/miniconda3/etc/profile.d/conda.sh
+eval "$(conda shell.bash hook)"
 conda activate grail
 [ -f .env ] && source .env
 ```
@@ -220,7 +223,14 @@ Required only for retargeting and task-general tracking training. The one-shot p
 bash scripts/setup/install_env_sonic.sh      # creates conda env 'sonic' (Python 3.11)
 ```
 
-That installs Isaac Sim 5.1.0 + Isaac Lab v2.3.2 + retargeting deps, applies the GRAIL GMR overlay, and pulls `imports/SONIC` LFS assets. See `scripts/setup/sonic_install.md` for the step-by-step breakdown if you want to DIY. Time: ~30 min. Disk: ~20 GB. EULA: auto-accepted via `OMNI_KIT_ACCEPT_EULA=Yes`.
+That installs Isaac Sim 5.1.0, Isaac Lab v2.3.2, public GMR, GRAIL, and the
+retargeting/training dependencies, then pulls `imports/SONIC` LFS assets.
+GRAIL-specific GMR behavior is applied at runtime by `grail.adapters.gmr`; the
+public GMR submodule is not modified. Time: ~30 min. Disk: ~20 GB. EULA:
+auto-accepted via `OMNI_KIT_ACCEPT_EULA=Yes`.
+
+The published Docker image already contains this environment; inside that
+container, use `conda activate sonic` directly instead of running the installer.
 
 ### GRAIL Package
 
@@ -230,7 +240,7 @@ pip install -e .
 
 ## Prepare Datasets
 
-We use [ComAsset](https://huggingface.co/datasets/SShowbiz/ComAsset) as our main dataset:
+We use [ComAsset](https://huggingface.co/datasets/HyeonwooKim/ComAsset) as our main dataset:
 
 ```bash
 bash scripts/setup/download_comasset.sh
@@ -259,7 +269,16 @@ Other supported datasets: [BEHAVE](https://virtualhumans.mpi-inf.mpg.de/behave/)
 bash scripts/setup/download_checkpoints.sh
 ```
 
-Downloads GEM-SMPL (~14 GB), GEM-SOMA (~6.4 GB), FoundationPose (~250 MB), RealESRGAN, and SMPL-X body models. SMPL-X lands at `imports/GEM-SMPL/inputs/checkpoints/body_models/` — retargeting's `--smplx_model_path` default points there directly.
+Downloads the redistributable GEM-SMPL (~14 GB), GEM-SOMA (~6.4 GB),
+FoundationPose (~250 MB), RealESRGAN, and SONIC files. The script prints
+separate instructions for the licensed SMPL and SMPL-X body models; download
+them from the official [SMPL](https://smpl.is.tue.mpg.de/) and
+[SMPL-X](https://smpl-x.is.tue.mpg.de/) sites and place them at:
+
+```text
+imports/GEM-SMPL/inputs/checkpoints/body_models/smpl/SMPL_NEUTRAL.pkl
+imports/GEM-SMPL/inputs/checkpoints/body_models/smplx/SMPLX_NEUTRAL.npz
+```
 
 ## Environment Variables
 

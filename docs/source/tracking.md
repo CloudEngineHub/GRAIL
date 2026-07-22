@@ -19,13 +19,22 @@ and
 
 ## Install
 
-Same `sonic` env as [retargeting](retargeting.md#install):
+The published Docker image already contains the same `sonic` environment used
+by [retargeting](retargeting.md#install):
+
+```bash
+conda activate sonic
+```
+
+For a source installation, create it once and then activate it:
 
 ```bash
 bash scripts/setup/install_env_sonic.sh
+conda activate sonic
 ```
 
-This sets up IsaacLab, GMR, GRAIL, and the training stack in one conda env.
+The source installer sets up Isaac Lab, GMR, GRAIL, and the training stack in
+one conda environment.
 
 ## Checkpoints
 
@@ -309,7 +318,7 @@ Pick a released policy and its matching released motion library:
 |--------|----------------------|-----------------------------------|
 | `pnp_table`  | `models/pnp_table_release/last.pt`  | `data/pickup_table`  |
 | `pnp_ground` | `models/pnp_ground_release/last.pt` | `data/pickup_ground` |
-| `terrain`    | `models/terrain_release/last.pt`    | `data/stairs_p1`     |
+| `terrain`    | `models/terrain_release/last.pt`    | `data/stair_p1`      |
 
 Set `CHECKPOINT` to the reference checkpoint, `DATA_DIR` to the matching
 released motion library (with `meta/`, `robot/`, `objects/`, `object_usd/`), `BPS_DIR` to

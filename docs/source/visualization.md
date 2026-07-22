@@ -11,8 +11,8 @@ Two CLI wrappers cover the common cases:
 
 | Script | Use case |
 |---|---|
-| {src}`scripts/visualize.sh <grail/visualization/scripts/visualize.sh>` | Batch — render every motion in a library |
-| {src}`scripts/visualize_single.sh <grail/visualization/scripts/visualize_single.sh>` | Render one motion from its `robot/<seq>.pkl` |
+| {blob}`scripts/visualize.sh <grail/visualization/scripts/visualize.sh>` | Batch — render every motion in a library |
+| {blob}`scripts/visualize_single.sh <grail/visualization/scripts/visualize_single.sh>` | Render one motion from its `robot/<seq>.pkl` |
 
 Underneath, both call the same two Python modules:
 `grail.visualization.prepare_vis_shard` (motion-lib → trajectory shard) and
