@@ -110,7 +110,7 @@ indoor2-manipulation:
   render_width: 720
   render_height: 1280
 indoor2-pickup-table:
-  blender_file_name: indoor2
+  blender_file_name: indoor2_notable
   character_pos: [5.5, 14.5, 0.1365]
   character_rot: [90, 0, 0]
   character_scale: [0.01, 0.01, 0.01]

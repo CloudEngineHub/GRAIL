@@ -1,0 +1,27 @@
+# Blender 4.5.1 LTS MTL File: 'indoor2.blend'
+# www.blender.org
+
+newmtl shader_metal.021
+Kd 0.123139 0.083687 0.063115
+Ks 0.919882 0.919882 0.919882
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+Pr 0.500000
+Pm 1.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+newmtl shader_rough_plastic.017
+Kd 0.124351 0.129509 0.040823
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.659000
+Pm 0.500000
