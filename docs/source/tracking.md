@@ -341,7 +341,7 @@ SAVE_DIR="$(dirname ${CHECKPOINT})/renderings/${MOTION_KEYS}"
 
 python -u gear_sonic/eval_agent_trl.py \
     +checkpoint=${CHECKPOINT} \
-    +headless=True \
+    headless=True \
     ++eval_callbacks=im_eval \
     ++run_eval_loop=False \
     ++num_envs=${NUM_ENVS} \
