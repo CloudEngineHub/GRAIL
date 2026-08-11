@@ -447,6 +447,17 @@ def render_all(
                 traj.get("table_pos_w") is not None and float(traj["table_pos_w"][0][2]) >= 0.1
             )
             has_obj = traj.get("object_pos_w") is not None
+            object_scale = np.asarray(
+                traj.get("object_scale", np.ones(3)), dtype=np.float32
+            ).reshape(-1)
+            if object_scale.size == 1:
+                object_scale = np.repeat(object_scale, 3)
+            if (
+                object_scale.size != 3
+                or not np.all(np.isfinite(object_scale))
+                or np.any(object_scale <= 0)
+            ):
+                raise ValueError(f"invalid object_scale: {object_scale}")
 
             if has_table:
                 cx, cy = float(traj["table_pos_w"][0][0]), float(traj["table_pos_w"][0][1])
@@ -572,16 +583,20 @@ def render_all(
 
                     xformable = UsdGeom.Xformable(obj_prim)
                     ops = xformable.GetOrderedXformOps()
-                    translate_op = orient_op = None
+                    translate_op = orient_op = scale_op = None
                     for op in ops:
                         if op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
                             translate_op = op
                         elif op.GetOpType() == UsdGeom.XformOp.TypeOrient:
                             orient_op = op
+                        elif op.GetOpType() == UsdGeom.XformOp.TypeScale:
+                            scale_op = op
                     if translate_op is None:
                         translate_op = xformable.AddTranslateOp()
                     if orient_op is None:
                         orient_op = xformable.AddOrientOp(precision=UsdGeom.XformOp.PrecisionFloat)
+                    if scale_op is None:
+                        scale_op = xformable.AddScaleOp(precision=UsdGeom.XformOp.PrecisionFloat)
                     translate_op.Set(Gf.Vec3d(ox, oy, float(obj_pos[2])))
                     # obj_quat is wxyz end-to-end (convert_hoi_to_motion_lib.py stores
                     # source wxyz; motion_lib passes bytes verbatim to IsaacLab's
@@ -603,6 +618,22 @@ def render_all(
                                 float(obj_quat[1]),
                                 float(obj_quat[2]),
                                 float(obj_quat[3]),
+                            )
+                        )
+                    if scale_op.GetPrecision() == UsdGeom.XformOp.PrecisionFloat:
+                        scale_op.Set(
+                            Gf.Vec3f(
+                                float(object_scale[0]),
+                                float(object_scale[1]),
+                                float(object_scale[2]),
+                            )
+                        )
+                    else:
+                        scale_op.Set(
+                            Gf.Vec3d(
+                                float(object_scale[0]),
+                                float(object_scale[1]),
+                                float(object_scale[2]),
                             )
                         )
                     if f == skip and idx == 0:

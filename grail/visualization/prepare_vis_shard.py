@@ -199,6 +199,7 @@ def convert_motion_lib_to_trajectories(
         # Object data
         object_pos_w = None
         object_quat_w = None
+        object_scale = None
         if os.path.isfile(object_path):
             try:
                 obj_data = joblib.load(object_path)
@@ -230,6 +231,24 @@ def convert_motion_lib_to_trajectories(
                         object_quat_w = np.concatenate(
                             [object_quat_w, np.tile(object_quat_w[-1:], (pad_n, 1))], axis=0
                         )
+
+                    # Object meshes are stored at their source size; the motion-lib
+                    # scale must be applied by the replay renderer. Scale is static
+                    # and may be stored as a scalar, (3,), or (3, 1).
+                    raw_scale = obj_entry.get("scale", np.ones(3))
+                    object_scale = np.asarray(raw_scale, dtype=np.float32).reshape(-1)
+                    if object_scale.size == 1:
+                        object_scale = np.repeat(object_scale, 3)
+                    if (
+                        object_scale.size != 3
+                        or not np.all(np.isfinite(object_scale))
+                        or np.any(object_scale <= 0)
+                    ):
+                        print(
+                            f"  Warning: {motion_key} has invalid object scale "
+                            f"{np.asarray(raw_scale).shape}; using identity"
+                        )
+                        object_scale = np.ones(3, dtype=np.float32)
             except Exception as e:
                 print(f"  Warning: cannot load object for {motion_key}: {e}")
 
@@ -257,6 +276,7 @@ def convert_motion_lib_to_trajectories(
         if object_pos_w is not None:
             traj["object_pos_w"] = object_pos_w
             traj["object_quat_w"] = object_quat_w
+            traj["object_scale"] = object_scale
         if table_pos_w is not None:
             traj["table_pos_w"] = table_pos_w
 
