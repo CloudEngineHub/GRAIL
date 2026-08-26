@@ -4,7 +4,7 @@ GRAIL Documentation
 .. raw:: html
 
    <p>
-     <a href="https://research.nvidia.com/labs/dair/grail/"><img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"></a>
+     <a href="https://nvlabs.github.io/GRAIL/"><img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"></a>
      <a href="https://arxiv.org/pdf/2606.05160"><img src="https://img.shields.io/badge/Paper-PDF-red?style=flat-square" alt="Paper"></a>
      <a href="https://github.com/NVlabs/GRAIL/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-NVIDIA-76B900?style=flat-square" alt="License"></a>
      <a href="https://github.com/isaac-sim/IsaacLab/releases/tag/v2.3.2"><img src="https://img.shields.io/badge/IsaacLab-2.3.2-76B900?style=flat-square" alt="IsaacLab"></a>
@@ -30,14 +30,6 @@ pick-up and stair-climbing.
    **New here?** Start with :doc:`installation`, then
    :doc:`quick_start` for a 5-minute smoke run.
 
-News
-----
-
-- **2026-06** — Released code on `GitHub <https://github.com/NVlabs/GRAIL>`_ and dataset on `HuggingFace <https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-Locomanipulation-GRAIL>`_.
-- **2026-04** — Project page launched at
-  `research.nvidia.com/labs/dair/grail
-  <https://research.nvidia.com/labs/dair/grail/>`_.
-
 Pipeline at a glance
 --------------------
 
@@ -59,7 +51,7 @@ Pipeline at a glance
            →  3D object meshes
            ↓
    python -m grail.pipelines.gen_2dhoi
-           →  Blender + Kling AI HOI videos
+           →  Blender + Kling AI / MiniMax-H3 HOI videos
            ↓
    python -m grail.pipelines.recon_4dhoi
            →  SMPL-X body + object 4D trajectories
@@ -124,6 +116,9 @@ Bundled Dependencies
    * - ``imports/MoGe``, ``imports/Hunyuan3D-2.1``
      - Microsoft, Tencent
      - Monocular depth + 3D asset generation
+   * - ``imports/Sana``
+     - `NVlabs/Sana <https://github.com/NVlabs/Sana>`_
+     - MiniMax-H3 video generation through Sol-Engine
 
 Initialize with:
 

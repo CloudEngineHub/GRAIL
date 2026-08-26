@@ -10,20 +10,48 @@ The repo ships three conda envs:
 
 ## Docker (Recommended)
 
-The Docker image ships pre-installed system dependencies, CUDA 12.8, and the
-`grail`, `hunyuan`, and `sonic` conda envs. Bind-mount your repo and run the
-lightweight setup script to validate GPU/Python-specific native extensions and
-download Blender:
+Choose between two Linux AMD64, environment-only images:
+
+```{list-table}
+:widths: 45 55
+:header-rows: 1
+
+* - Image
+  - Use it for
+* - `docker.io/nvgrail/grail:1.1.1` (`:latest`)
+  - Standard GRAIL with Kling; no MiniMax-H3/SGLang runtime.
+* - `docker.io/nvgrail/grail:1.1.1-minimax-h3` (`:minimax-h3`)
+  - Standard GRAIL plus an isolated MiniMax-H3/SGLang runtime.
+```
+
+Both images ship pre-installed system dependencies, CUDA, and the `grail`,
+`hunyuan`, and `sonic` Conda environments. Neither image contains the
+GRAIL/Sana source, GRAIL or MiniMax-H3 checkpoints, API keys, or user data.
+Bind-mount your repo and run the lightweight setup script to validate
+GPU/Python-specific native extensions and download Blender. Keep `.env` and
+registry credentials on the host; never add them to an image build context.
+
+For an exactly reproducible pull, use the immutable release index:
+
+```text
+Standard:
+docker.io/nvgrail/grail@sha256:6495aaa071de42c5b006ff8ed3976cd3f73572711bd6b25ac463bdac7a218f42
+
+MiniMax-H3:
+docker.io/nvgrail/grail@sha256:43a322bc304bca2a2f1a349004b073098bf90715a8f528351a55b6b70fbf5f59
+```
 
 ```bash
 git clone https://github.com/NVlabs/GRAIL.git
 cd GRAIL
 git submodule update --init --recursive
 
-docker pull docker.io/nvgrail/grail:latest
+# The public Docker Hub images can be pulled without registry credentials.
+export GRAIL_IMAGE=docker.io/nvgrail/grail:1.1.1
+docker pull "$GRAIL_IMAGE"
 docker run --gpus all -it --shm-size=16g \
     -v "$PWD":/workspace/grail \
-    docker.io/nvgrail/grail:latest
+    "$GRAIL_IMAGE"
 
 # Inside the container
 cd /workspace/grail

@@ -3,7 +3,7 @@
 # GRAIL: Generating Humanoid Loco-Manipulation from 3D Assets and Video Priors
 
 <p>
-  <a href="https://research.nvidia.com/labs/dair/grail/">
+  <a href="https://nvlabs.github.io/GRAIL/">
     <img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"/>
   </a>
   <a href="https://arxiv.org/pdf/2606.05160">
@@ -22,6 +22,12 @@
 </div>
 
 **GRAIL** is a fully digital data-generation pipeline for humanoid loco-manipulation. It composes 3D assets, simulator-ready scenes, robot-proportioned characters, and video foundation model priors to synthesize metric 4D human-object interaction (HOI) trajectories, then retargets them to a Unitree G1 and trains task-general policies for pick-up, whole-body manipulation, sitting, and terrain traversal. Using only GRAIL-generated data, the resulting egocentric visual policies transfer to real-world object pick-up and stair-climbing.
+
+## News
+
+- **[2026-08-25]** 🎬 **MiniMax-H3 video generation** — added an optional local MiniMax-H3/Sol-Engine backend for the 2D-HOI pipeline. See the [2D-HOI generation guide](https://nvlabs.github.io/GRAIL/gen_2dhoi.html#minimax-h3-provider).
+- **[2026-07-15]** 🤖 **Task-general tracking checkpoints** — released policy checkpoints trained on the released GRAIL data. See the [tracking guide](https://nvlabs.github.io/GRAIL/tracking.html#tracking-released-data) and [dataset page](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-Locomanipulation-GRAIL).
+- **[2026-06-03]** 🎉 **Code release** — released the GRAIL codebase and documentation.
 
 ## Motion Gallery
 
@@ -53,18 +59,29 @@
 
 ## Quick Start
 
-**Pull the docker image** and install local extras inside the bind-mounted checkout:
+**Choose a Docker image** and install local extras inside the bind-mounted checkout:
+
+| Image | Use it for |
+| --- | --- |
+| `docker.io/nvgrail/grail:1.1.1` (`:latest`) | Standard GRAIL with Kling; no MiniMax-H3/SGLang runtime |
+| `docker.io/nvgrail/grail:1.1.1-minimax-h3` (`:minimax-h3`) | Standard GRAIL plus an isolated MiniMax-H3/SGLang runtime |
+
+Both Linux AMD64 images contain runtime environments only. They do not contain
+the GRAIL/Sana source, GRAIL or MiniMax-H3 checkpoints, API keys, or user data.
+Keep credentials outside the image and provide them only at runtime.
 
 ```bash
 git clone https://github.com/NVlabs/GRAIL.git
 cd GRAIL
 git submodule update --init --recursive
 
-docker pull docker.io/nvgrail/grail:latest
+# The public Docker Hub images can be pulled without registry credentials.
+export GRAIL_IMAGE=docker.io/nvgrail/grail:1.1.1
+docker pull "$GRAIL_IMAGE"
 
 docker run --gpus all -it --shm-size=16g \
     -v "$PWD":/workspace/grail \
-    docker.io/nvgrail/grail:latest
+    "$GRAIL_IMAGE"
 
 # inside the container
 cd /workspace/grail
@@ -105,18 +122,18 @@ Full documentation can be found at [docs](https://nvlabs.github.io/GRAIL/)
 (rendered HTML) and markdown sources are linked below.
 
 ### Getting Started
-- [Installation](docs/source/installation.md)
-- [Quick Start](docs/source/quick_start.md)
+- [Installation](https://nvlabs.github.io/GRAIL/installation.html)
+- [Quick Start](https://nvlabs.github.io/GRAIL/quick_start.html)
 
 ### Pipeline
-- [3D Asset Generation](docs/source/gen_3d_assets.md)
-- [2D HOI Generation](docs/source/gen_2dhoi.md)
-- [4D HOI Reconstruction](docs/source/recon_4dhoi.md)
-- [Retargeting](docs/source/retargeting.md)
-- [Task General Tracking](docs/source/tracking.md)
-- [Data Export](docs/source/data_export.md)
-- [Data Visualization](docs/source/visualization.md)
-- [Web Visualizer](docs/source/web_visualizer.md)
+- [3D Asset Generation](https://nvlabs.github.io/GRAIL/gen_3d_assets.html)
+- [2D HOI Generation](https://nvlabs.github.io/GRAIL/gen_2dhoi.html)
+- [4D HOI Reconstruction](https://nvlabs.github.io/GRAIL/recon_4dhoi.html)
+- [Retargeting](https://nvlabs.github.io/GRAIL/retargeting.html)
+- [Task General Tracking](https://nvlabs.github.io/GRAIL/tracking.html)
+- [Data Export](https://nvlabs.github.io/GRAIL/data_export.html)
+- [Data Visualization](https://nvlabs.github.io/GRAIL/visualization.html)
+- [Web Visualizer](https://nvlabs.github.io/GRAIL/web_visualizer.html)
 
 ## TODOs
 

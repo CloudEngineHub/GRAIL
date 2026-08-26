@@ -107,7 +107,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GRAIL",
-            "url": "https://research.nvidia.com/labs/dair/grail/",
+            "url": "https://nvlabs.github.io/GRAIL/",
             "icon": "fa-solid fa-globe",
             "type": "fontawesome",
         },
