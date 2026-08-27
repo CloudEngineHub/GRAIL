@@ -77,13 +77,37 @@ def _get_mesh_prims_subtree(prim, predicate: Callable | None = None):
     return mesh_prims
 
 
+def _triangulate(counts, indices):
+    """Fan-triangulate faces described by USD ``faceVertexCounts``.
+
+    ``faceVertexIndices`` is a flat array whose slicing is defined by
+    ``faceVertexCounts``; reshaping it to (-1, 3) is only correct when every
+    face is already a triangle. A quad mesh has ``4 * n_faces`` indices, which
+    is divisible by 3 whenever ``n_faces`` is, so the wrong reshape does not
+    raise -- it silently returns triangles that span unrelated faces.
+    """
+    counts = np.asarray(counts, dtype=np.int64)
+    indices = np.asarray(indices, dtype=np.int64)
+    if (counts == 3).all():
+        return indices.reshape(-1, 3)
+    starts = np.concatenate(([0], np.cumsum(counts)[:-1]))
+    tris = []
+    for start, n in zip(starts, counts):
+        fan = indices[start : start + n]
+        tris.extend((fan[0], fan[i], fan[i + 1]) for i in range(1, n - 1))
+    return np.asarray(tris, dtype=np.int64).reshape(-1, 3)
+
+
 def _usd2trimesh(prim):
     from pxr import UsdGeom
 
     mesh = UsdGeom.Mesh(prim)
     vertices = np.asarray(mesh.GetPointsAttr().Get())
-    faces = np.asarray(mesh.GetFaceVertexIndicesAttr().Get())
-    return trimesh.Trimesh(vertices, faces.reshape(-1, 3))
+    faces = _triangulate(
+        mesh.GetFaceVertexCountsAttr().Get(),
+        mesh.GetFaceVertexIndicesAttr().Get(),
+    )
+    return trimesh.Trimesh(vertices, faces)
 
 
 def _get_trimesh_from_prim(prim):
