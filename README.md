@@ -148,15 +148,17 @@ Full documentation can be found at [docs](https://nvlabs.github.io/GRAIL/)
 If you find GRAIL useful in your research, please cite:
 
 ```bibtex
-@misc{grail2026,
-  title         = {GRAIL: Generating Humanoid Loco-Manipulation from 3D Assets and Video Priors},
-  author        = {Tianyi Xie and Haotian Zhang and Jinhyung Park and Zi Wang and Bowen Wen and Jiefeng Li and Xueting Li and Qingwei Ben and Haoyang Weng and Yufei Ye and David Minor and Tingwu Wang and Chenfanfu Jiang and Sanja Fidler and Jan Kautz and Linxi Fan and Yuke Zhu and Zhengyi Luo and Umar Iqbal and Ye Yuan},
-  year          = {2026},
-  eprint        = {2606.05160},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.RO},
-  doi           = {10.48550/arXiv.2606.05160},
-  url           = {https://arxiv.org/abs/2606.05160},
+@inproceedings{grail2026,
+  title     = {{GRAIL}: Generating Humanoid Loco-Manipulation from {3D} Assets and Video Priors},
+  author    = {Tianyi Xie and Haotian Zhang and Jinhyung Park and Zi Wang and
+               Bowen Wen and Jiefeng Li and Xueting Li and Qingwei Ben and
+               Haoyang Weng and Yufei Ye and David Minor and Tingwu Wang and
+               Chenfanfu Jiang and Sanja Fidler and Jan Kautz and Linxi Fan and
+               Yuke Zhu and Zhengyi Luo and Umar Iqbal and Ye Yuan},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2026},
+  note      = {Oral presentation},
+  url       = {https://arxiv.org/abs/2606.05160},
 }
 ```
 
