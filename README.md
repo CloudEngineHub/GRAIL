@@ -157,7 +157,6 @@ If you find GRAIL useful in your research, please cite:
                Yuke Zhu and Zhengyi Luo and Umar Iqbal and Ye Yuan},
   booktitle = {Conference on Robot Learning (CoRL)},
   year      = {2026},
-  note      = {Oral presentation},
   url       = {https://arxiv.org/abs/2606.05160},
 }
 ```
