@@ -3,7 +3,7 @@
 # GRAIL: Generating Humanoid Loco-Manipulation from 3D Assets and Video Priors
 
 <p>
-  <a href="https://nvlabs.github.io/GRAIL/">
+  <a href="https://research.nvidia.com/labs/dair/grail/">
     <img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"/>
   </a>
   <a href="https://arxiv.org/pdf/2606.05160">
