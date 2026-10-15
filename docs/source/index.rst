@@ -1,5 +1,5 @@
-GRAIL Documentation
-===================
+GRAIL: Generating Humanoid Loco-Manipulation from World Models
+==============================================================
 
 .. raw:: html
 
@@ -15,7 +15,7 @@ GRAIL Documentation
    :align: center
    :width: 100%
 
-GRAIL — *Generating Humanoid Loco-Manipulation from 3D Assets and Video Priors* —
+GRAIL — *Generating Humanoid Loco-Manipulation from World Models* —
 is a fully digital data-generation pipeline for robot-compatible humanoid
 loco-manipulation. It composes 3D assets, simulator-ready scenes,
 robot-proportioned characters, and video foundation model priors to synthesize

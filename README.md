@@ -1,6 +1,6 @@
 <div align="center">
 
-# GRAIL: Generating Humanoid Loco-Manipulation from 3D Assets and Video Priors
+# GRAIL: Generating Humanoid Loco-Manipulation from World Models
 
 <p><strong>CoRL 2026</strong> <em>(Oral Presentation)</em></p>
 
@@ -149,7 +149,7 @@ If you find GRAIL useful in your research, please cite:
 
 ```bibtex
 @inproceedings{grail2026,
-  title     = {{GRAIL}: Generating Humanoid Loco-Manipulation from {3D} Assets and Video Priors},
+  title     = {{GRAIL}: Generating Humanoid Loco-Manipulation from World Models},
   author    = {Tianyi Xie and Haotian Zhang and Jinhyung Park and Zi Wang and
                Bowen Wen and Jiefeng Li and Xueting Li and Qingwei Ben and
                Haoyang Weng and Yufei Ye and David Minor and Tingwu Wang and
